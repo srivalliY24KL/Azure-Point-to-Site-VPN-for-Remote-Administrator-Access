@@ -1,70 +1,284 @@
-# Getting Started with Create React App
+# SecureAdmin – Azure Point-to-Site VPN for Remote Administrator Access
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+## 📌 Project Overview
 
-## Available Scripts
+SecureAdmin is a secure remote administrator access solution built using Azure Point-to-Site (P2S) VPN.
 
-In the project directory, you can run:
+The project allows administrators to securely access a private Azure Virtual Machine without exposing the VM through a public IP address.
 
-### `npm start`
+A React-based SecureAdmin dashboard provides visibility into VPN status, certificate lifecycle information, VPN routes, and Azure resources.
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+---
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+## 🎯 Problem Statement
 
-### `npm test`
+Remote administrators need secure access to private Azure resources without exposing management ports to the public internet.
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+The main challenges are:
 
-### `npm run build`
+- Certificate-based authentication management can be difficult to track.
+- VPN route configuration can cause split-tunnel confusion.
+- Administrators need clear visibility into VPN connectivity and private resources.
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+---
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+## 💡 Proposed Solution
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+We implemented an Azure Point-to-Site VPN with certificate-based authentication.
 
-### `npm run eject`
+The solution provides:
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+- Secure remote access to a private Azure VM
+- Certificate-based VPN authentication
+- Private VM access without a public IP
+- Network Security Group protection
+- Split-tunnel routing
+- Certificate lifecycle visibility
+- VPN route visibility
+- Azure resource visibility through the SecureAdmin dashboard
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+---
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+## 🏗️ System Architecture
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+The administrator connects from the local system using Azure VPN Client.
 
-## Learn More
+```text
+Administrator
+     |
+     | Certificate Authentication
+     ↓
+Azure VPN Client
+     |
+     ↓
+Point-to-Site VPN
+     |
+     ↓
+Azure VPN Gateway
+     |
+     ↓
+Azure Virtual Network
+     |
+     ↓
+NSG
+     |
+     ↓
+Private Azure VM
+10.0.1.4
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+☁️ Azure Services Used
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+| Service                      | Purpose                                      |
+| ---------------------------- | -------------------------------------------- |
+| Azure Virtual Network        | Provides the private network                 |
+| Azure VPN Gateway            | Provides Point-to-Site VPN connectivity      |
+| Azure Virtual Machine        | Private administrator target                 |
+| Azure Network Security Group | Controls network access                      |
+| Azure Public IP              | Used by the VPN Gateway                      |
+| Azure VPN Client             | Establishes the administrator VPN connection |
+| Azure Certificates           | Provides certificate-based authentication    |
 
-### Code Splitting
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+🌐 Network Configuration
 
-### Analyzing the Bundle Size
+| Component            | Configuration       |
+| -------------------- | ------------------- |
+| Resource Group       | `P2S-VPN-RG`        |
+| Virtual Network      | `Admin-VNet`        |
+| VNet Address Space   | `10.0.0.0/16`       |
+| VM Subnet            | `VM-Subnet`         |
+| VM Subnet Range      | `10.0.1.0/24`       |
+| Gateway Subnet       | `GatewaySubnet`     |
+| Gateway Subnet Range | `10.0.255.0/27`     |
+| VPN Client Pool      | `172.16.201.0/24`   |
+| Private VM           | `Admin-VM`          |
+| VM Private IP        | `10.0.1.4`          |
+| VPN Gateway          | `Admin-VPN-Gateway` |
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+🔐 Security Implementation
 
-### Making a Progressive Web App
+The Azure VM does not have a public IP address.
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+SSH access is restricted through the Network Security Group.
 
-### Advanced Configuration
+The SSH rule allows:
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
+Source: 172.16.201.0/24
+Protocol: TCP
+Destination Port: 22
+Action: Allow
 
-### Deployment
+This ensures that SSH access is available only through the VPN client network.
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
+🔑 Certificate Authentication
+The Point-to-Site VPN uses certificate-based authentication.
 
-### `npm run build` fails to minify
+The configured client certificate is:
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+P2SChildCert
+
+The certificate is used by Azure VPN Client to authenticate the administrator before establishing the VPN connection.
+
+The SecureAdmin dashboard provides certificate lifecycle visibility including:
+
+Certificate name
+Issuer
+Expiry date
+Remaining validity
+Thumbprint
+Authentication method
+🔀 Split-Tunnel Routing
+
+The VPN uses split-tunnel routing.
+
+Azure private traffic is routed through the VPN while normal internet traffic remains on the local network.
+
+Example:
+
+10.0.0.0/16  → VPN Tunnel
+10.0.1.4     → VPN Tunnel
+8.8.8.8      → Local Network
+
+This makes the routing behavior visible to the administrator.
+
+📊 SecureAdmin Dashboard
+
+SecureAdmin is a React-based dashboard that provides visibility into the implemented VPN environment.
+
+Dashboard
+
+Displays:
+
+VPN connection status
+VPN client IP
+Certificate status
+Private VM reachability
+Split-tunnel status
+Private resource information
+Certificates
+
+Displays certificate lifecycle information such as:
+
+Active certificate
+Issuer
+Expiry date
+Remaining validity
+Thumbprint
+VPN Routes
+
+Displays:
+
+Azure private network routes
+VPN tunnel routes
+Local network routes
+Client VPN IP
+Split-tunnel status
+Resources
+
+Displays the Azure resources used by the solution:
+
+Resource Group
+Virtual Network
+Subnets
+Virtual Machine
+VPN Gateway
+
+SecureAdmin currently acts as a visibility and monitoring layer for the implemented VPN configuration. Automated certificate renewal and direct Azure resource management are future enhancements.
+
+🧪 Testing and Validation
+Test 1 – VPN Disconnected
+
+When the VPN is disconnected, the private VM cannot be reached from the administrator machine.
+
+Test 2 – VPN Connected
+
+After connecting through Azure VPN Client:
+
+VPN IP: 172.16.201.2
+
+The private Azure network becomes reachable.
+
+Test 3 – Private VM Connectivity
+tracert 10.0.1.4
+
+The private VM becomes reachable through the VPN tunnel.
+
+Test 4 – SSH Access
+ssh -i "Admin-VM_key.pem" azureuser@10.0.1.4
+
+Successful access confirms secure administrator connectivity to the private VM.
+
+Test 5 – Split Tunnel
+
+The routing table confirms that Azure private traffic uses the VPN while normal internet traffic uses the local network.
+
+💻 Technologies Used
+Cloud
+Microsoft Azure
+Azure Virtual Network
+Azure VPN Gateway
+Azure Virtual Machine
+Network Security Group
+Frontend
+React.js
+JavaScript
+HTML
+CSS
+Networking & Security
+Point-to-Site VPN
+Certificate Authentication
+SSH
+Split-Tunnel Routing
+NSG
+📁 Project Structure
+secureadmin-dashboard/
+│
+├── documentation/
+│   ├── Abstract.md
+│   ├── Architecture.png
+│   └── Services-Required.md
+│
+├── public/
+├── src/
+│   ├── App.js
+│   ├── App.css
+│   └── ...
+│
+├── package.json
+└── README.md
+
+▶️ Running the SecureAdmin Dashboard
+
+Clone the repository:
+
+git clone https://github.com/srivalliY24KL/Azure-Point-to-Site-VPN-for-Remote-Administrator-Access.git
+
+Navigate to the React project:
+
+cd secureadmin-dashboard
+
+Install dependencies:
+
+npm install
+
+Start the application:
+
+npm start
+
+The dashboard will be available at:
+
+http://localhost:3000
+👥 Team Members
+G. Srivalli Chowdary – 2400032594
+K. Lasya – 2400089001
+B. Abhiraam – 2400032536
+A. Narendra Venkata Satyasaiavinish – 2400032561
+📌 Project Outcome
+
+The project successfully demonstrates secure remote administrator access to a private Azure VM using Point-to-Site VPN and certificate-based authentication.
+
+The VM remains without a public IP, while administrators can securely access it through the VPN tunnel.
+
+The SecureAdmin dashboard provides a centralized view of certificate status, VPN routing, connectivity, and Azure resources.
+
+
